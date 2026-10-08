@@ -4,3 +4,6 @@ __pycache__/
 *.pyc
 .DS_Store
 .ipynb_checkpoints/
+reports/figures/*.tmp
+.ruff_cache/
+.pytest_cache/
