@@ -10,6 +10,7 @@ to leave out hours when a station was closed.
 """
 
 import argparse
+import json
 import logging
 import time
 
@@ -122,8 +123,12 @@ def main() -> None:
             if level == "system" and name in STATION_ONLY:
                 continue
             t0 = time.time()
-            preds = run_backtest(data, [make_model(name)])
+            model = make_model(name)
+            preds = run_backtest(data, [model])
             preds.to_parquet(PREDICTIONS_DIR / f"{level}_{name}.parquet", index=False)
+            if getattr(model, "training_log", None):
+                path = config.REPORTS / f"{name}_training_log.json"
+                path.write_text(json.dumps(model.training_log, indent=2) + "\n")
             log.info(
                 "%s %s: %d prediction rows across %d weeks in %.0fs",
                 level,
