@@ -3,7 +3,7 @@ name = "bikecast"
 version = "0.1.0"
 description = "Day-ahead hourly demand forecasting for Boston Bluebikes stations"
 authors = [
-    { name = "Jason Lam", email = "jasonlam276@gmail.com" }
+    { name = "Jason Lam", email = "166332320+jasonlam11@users.noreply.github.com" }
 ]
 requires-python = ">=3.12"
 dependencies = [
