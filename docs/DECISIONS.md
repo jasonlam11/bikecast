@@ -138,3 +138,35 @@ storms, such as the 2026-02-23 snowstorm (1 trip system-wide), and these stay in
 forecast failures rather than being masked, because a station-level 48-hour closure rule does not cover a
 one-day system shutdown and an operator could not have known about it in advance with certainty. Ruff rule
 PD010 (prefer pivot_table over unstack) is turned off, since groupby then unstack is clear, idiomatic pandas.
+
+## Baselines
+Seasonal naive forecasts each station-hour as the value at the same station and hour one week earlier.
+Historical average forecasts the mean of the same station, weekday, and hour over the previous 8 weeks,
+skipping out-of-service hours. Eight weeks is long enough to average out noise in small counts and short
+enough to follow the season. It was set before looking at any test results and is not tuned. When last
+week's hour was out of service, seasonal naive falls back to the historical average, because copying a
+closure forward would forecast 0 for a station that has reopened. Rejected: forecasting 0 in that case,
+which punishes the baseline for a known closure rather than for forecasting skill.
+
+## Two baselines, two skill columns
+Per the plan, skill is reported against seasonal naive. On our data the historical average is clearly
+stronger: station-level MAE 1.89 vs 2.32 (about 19% better), because a single week's count at one station
+is very noisy and averaging 8 weeks smooths it out. So results.md also reports skill against the historical
+average, and a Phase 2 model only counts as a real improvement if it beats both. Rejected: reporting only
+the weaker baseline, which would overstate any model's gain.
+
+## Backtest protocol
+For each of the 10 test weeks, models are fit once on all data before the week starts. Each day D is then
+forecast at midnight using only data before D. Fitting once per week rather than once per day keeps
+Prophet and PyTorch affordable in Phase 2 (10 fits instead of 70), while predictions still use the most
+recent data through their lag features. The harness hands models only the visible slice and checks that
+predictions fall inside D and cover every station-hour. A test with a spy model confirms that no model
+ever sees a timestamp at or after its cutoff. The out-of-service flag is recomputed on each visible slice.
+Scoring leaves out hours that turned out to be closed (1,193 station-hours across the test weeks).
+
+## First feature table
+`features/build.py` builds lags at 24, 48, and 168 hours, the same-hour mean over the previous 7 days, the
+previous day's mean, calendar features, and forecast weather (precipitation clipped at 30 mm and
+log-transformed). Every demand feature for day D uses only data from before D. Row shifts are only valid on
+a complete hourly grid, so the builder checks the grid first and fails if it is incomplete. Phase 2 models
+will use this table.
