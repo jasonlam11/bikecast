@@ -10,7 +10,7 @@ import pandas as pd
 
 from bikecast import config, viz
 from bikecast.evaluation.backtest import PREDICTIONS_DIR
-from bikecast.evaluation.metrics import mae, rmse, skill, wape
+from bikecast.evaluation.metrics import coverage, mae, rmse, skill, wape
 
 log = logging.getLogger(__name__)
 
@@ -30,6 +30,74 @@ def load_predictions(level: str) -> pd.DataFrame:
         raise FileNotFoundError(f"No {level} predictions in {PREDICTIONS_DIR}; run backtest.py")
     preds = pd.concat([pd.read_parquet(f) for f in files], ignore_index=True)
     return preds[preds["in_service"]].copy()
+
+
+def check_identical_rows(preds: pd.DataFrame) -> None:
+    """Every model must be scored on exactly the same rows, or comparisons are meaningless."""
+    keys = ["test_week", "station_id", "ts", "target"]
+    sets = {m: set(map(tuple, g[keys].itertuples(index=False))) for m, g in preds.groupby("model")}
+    reference = sets[BASELINE]
+    for m, rows in sets.items():
+        if rows != reference:
+            raise ValueError(
+                f"{m} was scored on different rows than {BASELINE}: "
+                f"{len(rows - reference)} extra, {len(reference - rows)} missing"
+            )
+
+
+def coverage_section(preds: pd.DataFrame) -> list[str]:
+    with_intervals = preds[preds.get("yhat_lower", pd.Series(index=preds.index)).notna()]
+    if with_intervals.empty:
+        return []
+
+    def cov(d):
+        return coverage(d["y"], d["yhat_lower"], d["yhat_upper"])
+
+    def width(d):
+        return (d["yhat_upper"] - d["yhat_lower"]).mean()
+
+    lines = [
+        "## 80% prediction interval coverage",
+        "",
+        "Share of actuals inside the model's 80% interval. Well calibrated is about 80%.",
+        "",
+        "| model | group | coverage | mean width (bikes) | n |",
+        "|---|---|---|---|---|",
+    ]
+    for m, g in with_intervals.groupby("model"):
+        groups = [("all", g)]
+        groups += [(f"target: {k}", d) for k, d in g.groupby("target")]
+        groups += [(f"season: {k}", d) for k, d in g.groupby("season")]
+        groups += [(f"hours: {b[2]}", g[g["hour_band"] == b[2]]) for b in HOUR_BANDS]
+        for label, d in groups:
+            if d.empty:
+                continue
+            lines.append(f"| {m} | {label} | {cov(d):.1%} | {width(d):.2f} | {len(d):,} |")
+    return [*lines, ""]
+
+
+def sensitivity_section(stations: pd.DataFrame) -> list[str]:
+    files = sorted(PREDICTIONS_DIR.glob("sensitivity_stations_*_actual_weather.parquet"))
+    if not files:
+        return []
+    lines = [
+        "## Sensitivity: forecast weather vs actual weather",
+        "",
+        "Headline results use archived weather forecasts, which is what an operator would have. "
+        "Rerunning with actual (observed) weather shows how much better the model would look with "
+        "perfect weather knowledge.",
+        "",
+        "| model | MAE with forecast weather | MAE with actual weather | difference |",
+        "|---|---|---|---|",
+    ]
+    for f in files:
+        alt = pd.read_parquet(f)
+        alt = alt[alt["in_service"]]
+        name = alt["model"].iloc[0]
+        base = stations[stations["model"] == name]
+        m_fc, m_act = mae(base["y"], base["yhat"]), mae(alt["y"], alt["yhat"])
+        lines.append(f"| {name} | {m_fc:.3f} | {m_act:.3f} | {m_act / m_fc - 1:+.1%} |")
+    return [*lines, ""]
 
 
 def add_groups(preds: pd.DataFrame, weather_actual: pd.DataFrame) -> pd.DataFrame:
@@ -148,6 +216,8 @@ def build_report() -> str:
     weather_actual = pd.read_parquet(config.PROCESSED / "weather_actual.parquet")
     stations = add_groups(load_predictions("stations"), weather_actual)
     system = add_groups(load_predictions("system"), weather_actual)
+    check_identical_rows(stations)
+    check_identical_rows(system)
     all_station_rows = pd.concat(
         [pd.read_parquet(f) for f in PREDICTIONS_DIR.glob(f"stations_{BASELINE}.parquet")]
     )
@@ -203,6 +273,8 @@ def build_report() -> str:
             t = t.reindex([b[2] for b in HOUR_BANDS])
         parts += [f"### {title}", "", fmt_wide(t, by), ""]
     parts += ["![MAE by hour](figures/results_mae_by_hour.png)", ""]
+    parts += coverage_section(stations)
+    parts += sensitivity_section(stations)
 
     plot_mae_by_hour(stations)
     plot_mae_by_week(stations)

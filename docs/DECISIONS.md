@@ -179,3 +179,50 @@ corrupted. Weather for D itself is not corrupted, because the archived forecast 
 input; weather after D is. A control test adds a deliberately leaky feature (one hour back) and confirms
 the same check catches it, so the test is not passing trivially. Phase 2 models will be added to the same
 test.
+
+## Prophet: two daily curves instead of one
+Prophet's default daily seasonality is one curve shared by every day. EDA shows weekdays have two commute
+peaks (8am and 5pm) while weekends and holidays have one midday hump, so one shared curve would average
+two different shapes into a shape that fits neither. We turn the default off and add two conditional
+daily seasonalities (Fourier order 12, enough for sharp peaks): one for working days and one for weekends
+plus holidays. Weekly seasonality, yearly seasonality, US and Massachusetts holidays, and extra regressors
+for forecast temperature, precipitation (clipped, log1p), wind, and the semester flag complete the model.
+
+## Prophet: raw counts, clipped at zero, one fit per week
+One Prophet per station per target (100 per test week, plus 2 for system totals) is fit on all in-service
+history before the test week. The target is the raw hourly count, and forecasts and the 80% interval are
+clipped at 0. Rejected: a log target, because back-transforming biases the mean forecast low. Prophet uses
+no recent lags, so a single fit per week forecasts all 7 days, with weather forecasts and calendar as the
+only day-specific inputs. That is how Prophet is meant to be used, and it is one reason a lag-based model
+could beat it on day-ahead forecasts. Fits run in 6 parallel processes.
+
+## Known limitation: Prophet yearly seasonality with under 2 years of history
+Prophet warns that yearly seasonality is under-identified with less than 730 days of history, which
+applies to the first four test weeks (12 to 21 months of training data). We noticed the warning during the
+first real run and kept the setting as planned. Changing the model after it has started scoring test weeks
+would be tuning on the test set. The temperature regressor carries much of the seasonal signal anyway.
+Expect Prophet to be weaker in 2025 than in 2026.
+
+## Global MLP: one station-day per sample
+The PyTorch model forecasts all 24 hours of day D for one station at once (48 outputs: departures and
+arrivals). Inputs are the same day-ahead features as the feature table (lags 24, 48, and 168 hours,
+same-hour 7-day mean, previous-day mean, all log1p), D's forecast weather by hour (standardized on
+training days only), D's calendar (weekday one-hot, month as sin and cos, holiday, semester), the share of
+hours the station was closed on D-1 and D-7, and an 8-dimensional learned station embedding. The network
+is small on purpose: two hidden layers (128, 64), ReLU, dropout 0.1, about 50,000 parameters for roughly
+18,000 to 49,000 training samples. One sample per station-day matches how the forecast is used (a full day
+at midnight) and lets the model learn the shape of a day jointly.
+
+## Global MLP: loss, validation, early stopping
+The 14 days before each test week are the validation window, and the model trains only on days before
+that. Training stops after 10 epochs without validation improvement (max 200) and keeps the best epoch.
+Two losses are trained per week: Poisson negative log-likelihood (natural for counts, predicts the mean)
+and L1 (predicts the median, which is what MAE rewards). The one with lower validation MAE is kept, and the
+choice is logged. Closed hours get zero weight in the loss. Seeds are fixed and algorithms deterministic,
+and a test confirms that two runs give identical forecasts. Hyperparameters were set once before any
+results and are written with each week's best epoch to `reports/torch_mlp_training_log.json`. Rejected:
+tuning hyperparameters on test weeks, and a larger network or LSTM before the small MLP is shown to work.
+
+## Global MLP at station level only
+The system-wide total is one series with about 1,000 days. A global model exists to share patterns across
+many series, so it has nothing to share there. System-level results compare the baselines and Prophet.

@@ -91,13 +91,13 @@ MODELS = ["seasonal_naive", "historical_average", "prophet", "torch_mlp"]
 STATION_ONLY = {"torch_mlp"}
 
 
-def make_model(name: str):
+def make_model(name: str, weather_source: str = "forecast"):
     if name == "seasonal_naive":
         return SeasonalNaive()
     if name == "historical_average":
         return HistoricalAverage()
     calendar = pd.read_parquet(config.PROCESSED / "calendar.parquet")
-    weather = pd.read_parquet(config.PROCESSED / "weather_forecast.parquet")
+    weather = pd.read_parquet(config.PROCESSED / f"weather_{weather_source}.parquet")
     if name == "prophet":
         from bikecast.models.prophet_model import ProphetModel
 
@@ -112,10 +112,19 @@ def make_model(name: str):
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--models", nargs="*", default=MODELS, choices=MODELS)
+    parser.add_argument(
+        "--weather",
+        default="forecast",
+        choices=["forecast", "actual"],
+        help="actual = sensitivity check only; results.md headline numbers use forecasts",
+    )
+    parser.add_argument("--levels", nargs="*", default=["stations", "system"])
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     PREDICTIONS_DIR.mkdir(parents=True, exist_ok=True)
     for level, file in [("stations", "hourly"), ("system", "hourly_system")]:
+        if level not in args.levels:
+            continue
         data = pd.read_parquet(config.PROCESSED / f"{file}.parquet")
         if "in_service" not in data:
             data["in_service"] = True  # system-wide totals are never closed
@@ -123,8 +132,12 @@ def main() -> None:
             if level == "system" and name in STATION_ONLY:
                 continue
             t0 = time.time()
-            model = make_model(name)
+            model = make_model(name, args.weather)
             preds = run_backtest(data, [model])
+            if args.weather == "actual":
+                out = PREDICTIONS_DIR / f"sensitivity_{level}_{name}_actual_weather.parquet"
+                preds.to_parquet(out, index=False)
+                continue
             preds.to_parquet(PREDICTIONS_DIR / f"{level}_{name}.parquet", index=False)
             if getattr(model, "training_log", None):
                 path = config.REPORTS / f"{name}_training_log.json"
