@@ -287,3 +287,10 @@ marker comments and are filled by `make readme` from reports/results.md and repo
 re-renders the README and fails if anything differs, so a stale or hand-edited number cannot reach the main
 page. The planned `02_baselines.ipynb` was dropped: results.md already reports both baselines with every
 breakdown, so a notebook would only duplicate it.
+
+## No event feature, even though events cause the biggest misses
+Error analysis shows the worst days for both learned models are crowd events near the Charles River (likely
+the Head of the Charles Regatta on 2025-10-18, and Boston Marathon weekend on 2025-04-19). An event
+calendar is the obvious fix, but adding it now would mean changing the model because of what the test weeks
+showed, which is tuning on the test set. It is listed as the first item of future work instead. A fair test
+of it would need new test weeks chosen before the feature is built.
