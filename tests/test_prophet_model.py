@@ -74,3 +74,12 @@ def test_prophet_runs_in_backtest_with_intervals(setup):
     assert len(preds) == 7 * 24 * 2
     assert {"yhat_lower", "yhat_upper"} <= set(preds.columns)
     assert preds[["yhat", "yhat_lower", "yhat_upper"]].notna().all().all()
+
+
+def test_prophet_intervals_are_reproducible(setup):
+    data, cal, weather = setup
+    train = data[data["ts"] < START + pd.Timedelta(days=35)]
+    day = START + pd.Timedelta(days=36)
+    a = fast_model(cal, weather).fit(train).predict(None, day)
+    b = fast_model(cal, weather).fit(train).predict(None, day)
+    pd.testing.assert_frame_equal(a, b)

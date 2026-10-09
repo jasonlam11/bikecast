@@ -15,9 +15,11 @@ calendar, both known the night before.
 
 import logging
 import os
+import zlib
 from concurrent.futures import ProcessPoolExecutor
 
 import holidays
+import numpy as np
 import pandas as pd
 
 from bikecast.features.build import weather_features
@@ -63,6 +65,9 @@ def _fit_and_forecast(job: dict) -> pd.DataFrame:
     for r in REGRESSORS:
         m.add_regressor(r)
     m.fit(job["train"])
+    # Prophet draws its interval by simulation with numpy's global random state. Seed it per
+    # station and target so intervals are identical on every run and in any worker order.
+    np.random.seed(zlib.crc32(f"{job['station_id']}|{job['target']}".encode()))
     fc = m.predict(job["future"])[["ds", "yhat", "yhat_lower", "yhat_upper"]]
     for c in ["yhat", "yhat_lower", "yhat_upper"]:
         fc[c] = fc[c].clip(lower=0)

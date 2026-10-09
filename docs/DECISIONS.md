@@ -294,3 +294,10 @@ the Head of the Charles Regatta on 2025-10-18, and Boston Marathon weekend on 20
 calendar is the obvious fix, but adding it now would mean changing the model because of what the test weeks
 showed, which is tuning on the test set. It is listed as the first item of future work instead. A fair test
 of it would need new test weeks chosen before the feature is built.
+
+## Seeded Prophet intervals
+The fresh-clone reproducibility test matched every point forecast exactly, but Prophet's interval bounds
+differed slightly, moving a few coverage figures by 0.1 point. Prophet simulates its interval with numpy's
+global random state, which we had not seeded. Each station and target now seeds it from a hash of its
+names right before forecasting, so intervals are identical across runs and independent of which worker
+process handles which model.
