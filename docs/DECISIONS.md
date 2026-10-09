@@ -226,3 +226,30 @@ tuning hyperparameters on test weeks, and a larger network or LSTM before the sm
 ## Global MLP at station level only
 The system-wide total is one series with about 1,000 days. A global model exists to share patterns across
 many series, so it has nothing to share there. System-level results compare the baselines and Prophet.
+
+## Phase 2 results (from reports/results.md)
+The global MLP is the best station-level model: MAE 1.66 bikes per hour vs 1.89 for the historical
+average (+12% skill) and 2.32 for seasonal naive (+28%). It also has the lowest RMSE, so its L1 training
+(median forecasts) did not cost it on large misses. It beats the historical average in 9 of 10 weeks, with
+a slight loss in the July 2025 week. Its gain is largest on rainy days (18% vs the historical average on
+rainy days, 9% on dry days), so the weather inputs are doing real work. Prophet only matches the
+historical average at station level (+1.5%) but is the best system-wide model (+4 to 5% over the
+historical average). L1 beat Poisson on validation MAE in all 10 weeks. A full rerun produced identical
+predictions.
+
+## Why Prophet struggles at station level
+Prophet's components add together, so the summer level shift and the weekday peak shape are added at
+3am too. Night MAE is 0.81 for Prophet vs 0.49 for the historical average. Its noise model assumes the
+same spread at every hour, while count data spreads more when demand is higher. Coverage of the 80%
+interval is 84.9% overall, but 98.0% at night (too wide) and 66.8% in the 4 to 7pm peak (too narrow).
+Multiplicative seasonality or a variance-stabilizing target transform would likely help. These were not
+tried, because choosing them after seeing test results would be tuning on the test set; they are noted
+as future work. At system level, counts are large and closer to normally distributed, which suits
+Prophet's assumptions, and that is where it does best.
+
+## Weather sensitivity
+Rerunning the MLP with actual weather instead of archived forecasts improves station MAE by only 1.5%
+(1.664 to 1.639). So the forecast-vs-actual weather gap is small for this model, and the headline numbers,
+which use forecasts, are close to what perfect weather knowledge would give. The archived forecasts are
+still slightly better than true next-day forecasts (see the weather entry above), so the real-world gap
+could be a little larger.

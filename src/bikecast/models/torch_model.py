@@ -159,6 +159,7 @@ def train_net(train, val, n_stations, hp, loss):
     xv, sv, yv, mv = _tensors(val)
     gen = torch.Generator().manual_seed(hp["seed"])
     best = {"val_loss": float("inf"), "epoch": 0, "state": None}
+    curve = []
     for epoch in range(1, hp["max_epochs"] + 1):
         net.train()
         for idx in torch.randperm(len(xt), generator=gen).split(hp["batch_size"]):
@@ -169,6 +170,7 @@ def train_net(train, val, n_stations, hp, loss):
         with torch.no_grad():
             out = net(xv, sv)
             val_loss = net.loss_fn(out, yv, mv).item()
+        curve.append(round(val_loss, 5))
         if val_loss < best["val_loss"] - 1e-6:
             best = {"val_loss": val_loss, "epoch": epoch,
                     "state": {k: v.clone() for k, v in net.state_dict().items()}}  # fmt: skip
@@ -180,7 +182,7 @@ def train_net(train, val, n_stations, hp, loss):
         pred = net.predict_counts(net(xv, sv))
         val_mae = ((pred - yv).abs() * mv).sum().item() / mv.sum().item()
     return net, {"loss": loss, "best_epoch": best["epoch"], "epochs_run": epoch,
-                 "val_loss": best["val_loss"], "val_mae": val_mae}  # fmt: skip
+                 "val_loss": best["val_loss"], "val_mae": val_mae, "val_curve": curve}  # fmt: skip
 
 
 class TorchMLP:
