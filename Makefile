@@ -1,10 +1,14 @@
-.PHONY: setup data features backtest eda app test lint format
+.PHONY: setup data stations features backtest eda app test lint format
 
 setup:
 	uv sync
 
 data:
 	uv run python -m bikecast.data.pipeline $(if $(MONTHS),--months $(MONTHS))
+	$(MAKE) stations
+
+stations:
+	uv run python -m bikecast.data.stations
 
 features:
 	uv run python -m bikecast.features.build

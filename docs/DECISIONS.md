@@ -48,3 +48,27 @@ sensitive: C32014 and c32014 are different stations.
 75 trips appear in two monthly files with the same ride ID and start time (mostly trips that cross a month
 boundary). Another 123 ride IDs are reused for different trips. Downstream steps dedupe on (ride ID, start
 time), which removes true repeats without merging different trips that share an ID.
+
+## Station crosswalk: merge only the same place, never neighbors
+Bluebikes sometimes gives a station a new ID. We merge two IDs only when they are the same physical place
+and did not run side by side. That means a replacement (within 50 m, or the same name within 200 m, and
+active periods overlapping by at most 1 day) or a ghost (within 50 m, and the smaller ID was active for 31
+days or less). IDs that are close but both active, such as the two Lafayette Square stations 16 m apart,
+are separate dock groups with separate demand and stay separate. The canonical ID of a merged group is the
+one seen most recently. This gave 8 merges, taking 640 raw IDs to 632 stations. Every merge is listed in
+`reports/station_merges.md`, which `stations.py` generates. 39 IDs have more than one name (mostly
+punctuation, like "Tremont St. at Court St." vs "Tremont St at Court St"). Each keeps one station with its
+latest name. Location is the median of classic-bike trip coordinates, because e-bike GPS points drift.
+Rejected: matching on name alone (names change, and different stations share names) and matching on
+distance alone (it would merge real neighbors).
+
+## Top 50 stations ranked on 2024 only
+The top 50 are ranked by 2024 departures plus arrivals, which is entirely before the first test week
+(2025-01-13). Ranking on the full range would use test-period volume to choose what we forecast, a small
+form of leakage. All 50 stay active through September 2026. Together they cover 35.8% of 2024 trip ends.
+
+## Known structural breaks at top stations
+Two top stations got a new dock next door during the data range. These are flagged rather than merged, and
+are expected to show up in error analysis. Nashua Street at Red Auerbach Way (A32025) gained an
+"[Extension]" station on 2025-04-28, which replaced West End Park the same day. Copley Square (D32005)
+gained Boylston St at Dartmouth St (D32055) on 2024-05-01.
