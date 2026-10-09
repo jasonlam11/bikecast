@@ -35,6 +35,8 @@ extend-include = ["*.ipynb"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "PD"]
+# groupby().unstack() is idiomatic pandas
+ignore = ["PD010"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -128,3 +128,13 @@ semester dates are rough by a few days at each edge. Exact academic calendars we
 they differ by school and year, and a few days of edge error should not matter. All of these features are
 known far in advance, so none can leak. Note: test week 2025-10-13 starts on Columbus Day, which is
 realistic and is kept.
+
+## EDA findings that shape the models
+From `notebooks/01_eda.ipynb`: demand is flat year over year (Jan to Sep trips: 2025 -0.4%, 2026 -1.6% vs
+2024), so models get no growth term. Season (3.7x between September and January), weekday vs weekend
+shape, temperature, rain, holidays (-31%), and the academic calendar (MIT and Harvard share of top-50
+weekday departures 25.0% in term vs 20.9% out) all matter, so each becomes a feature. The worst days are
+storms, such as the 2026-02-23 snowstorm (1 trip system-wide), and these stay in the data as real
+forecast failures rather than being masked, because a station-level 48-hour closure rule does not cover a
+one-day system shutdown and an operator could not have known about it in advance with certainty. Ruff rule
+PD010 (prefer pivot_table over unstack) is turned off, since groupby then unstack is clear, idiomatic pandas.
