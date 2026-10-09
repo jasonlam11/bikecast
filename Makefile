@@ -1,4 +1,4 @@
-.PHONY: setup data stations aggregate features backtest eda app test lint format
+.PHONY: setup data stations aggregate weather calendar features backtest eda app test lint format
 
 setup:
 	uv sync
@@ -7,12 +7,20 @@ data:
 	uv run python -m bikecast.data.pipeline $(if $(MONTHS),--months $(MONTHS))
 	$(MAKE) stations
 	$(MAKE) aggregate
+	$(MAKE) weather
+	$(MAKE) calendar
 
 stations:
 	uv run python -m bikecast.data.stations
 
 aggregate:
 	uv run python -m bikecast.data.aggregate
+
+weather:
+	uv run python -m bikecast.data.weather
+
+calendar:
+	uv run python -m bikecast.data.calendar
 
 features:
 	uv run python -m bikecast.features.build

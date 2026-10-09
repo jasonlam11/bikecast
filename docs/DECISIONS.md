@@ -95,3 +95,36 @@ realistic. The flag is never a model input: a run's length is only known after i
 feature would leak the future. In the backtest it is recomputed on each training slice so that slice uses
 no later data. Rejected: swapping the winter-only stations for year-round ones (it does not handle the
 Marathon closures) and scoring closed hours as zeros.
+
+## Weather: archived forecasts for models, actuals for analysis
+In real use, tomorrow's weather is a forecast. Models use Open-Meteo's Historical Forecast API (what
+weather models predicted at the time) rather than observed weather. Limitation, to repeat in the README:
+Open-Meteo builds this series from the first hours of each model run, so it is still somewhat more accurate
+than a true 24-hour-ahead forecast, and results will be a little optimistic. Actuals (Open-Meteo archive,
+ERA5 reanalysis) are also stored and used for EDA and for the rain vs dry breakdown, since that should
+reflect what really happened. A model rerun on actuals gives a sensitivity check on how much weather
+accuracy matters. Rejected: actuals as model inputs (they are more accurate than anything available the
+night before, which leaks future information) and NOAA station data (needs a token and has gaps).
+
+## How the two weather series compare
+Temperature agrees closely (hourly correlation 0.991, mean absolute difference 1.1 C), and wind reasonably
+(correlation 0.80). Precipitation differs much more: hourly precipitation in 5.4% of forecast hours vs
+15.3% of actual hours, daily correlation 0.70, and 230 vs 344 days with at least 1 mm. Reanalysis tends to
+report lots of light drizzle, and the forecast misses some rain and invents some. That gap is real and is
+part of what makes day-ahead forecasting hard. The forecast series also has a few model artifacts, such as
+119.5 mm in one hour on 2024-06-14, when the actual day total was 10.4 mm. The stored data stays raw; the
+feature step will clip and log-transform precipitation so single spikes cannot dominate.
+
+## Weather time zones
+We request UTC from Open-Meteo and convert to naive Boston time to match the trip grid. At fall-back the
+two UTC hours that map to local 1am are averaged. At spring-forward the missing local 2am is interpolated.
+Tested on both 2024 DST dates.
+
+## Calendar features
+Hour, weekday, month, weekend, US federal plus Massachusetts holidays from the `holidays` package (this
+includes Patriots' Day, Marathon Monday), and an approximate university semester flag (Jan 20 to May 15,
+Sep 1 to Dec 20, every year). Many top stations are at MIT, Harvard, and BU, so terms likely matter. The
+semester dates are rough by a few days at each edge. Exact academic calendars were rejected for now because
+they differ by school and year, and a few days of edge error should not matter. All of these features are
+known far in advance, so none can leak. Note: test week 2025-10-13 starts on Columbus Day, which is
+realistic and is kept.
