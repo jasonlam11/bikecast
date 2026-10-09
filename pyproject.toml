@@ -11,8 +11,10 @@ dependencies = [
     "holidays>=0.106",
     "matplotlib>=3.11.2",
     "pandas>=3.0.6",
+    "prophet>=1.5.0",
     "pyarrow>=25.0.1",
     "requests>=2.34.2",
+    "torch>=2.14.1",
 ]
 
 [build-system]
@@ -41,3 +43,12 @@ ignore = ["PD010"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+
+# CI runs on Linux, where the default torch wheel pulls several GB of CUDA. Use the CPU build there.
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
