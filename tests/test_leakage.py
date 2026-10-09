@@ -143,3 +143,20 @@ def test_full_backtest_predictions_ignore_corrupted_test_weeks(data):
     pd.testing.assert_series_equal(clean["yhat"], dirty["yhat"])
     # The actuals did change, so the test really corrupted something.
     assert not clean["y"].equals(dirty["y"])
+
+
+def test_prophet_backtest_predictions_ignore_corrupted_test_days(data):
+    from bikecast.models.prophet_model import ProphetModel
+
+    ts = pd.Series(pd.date_range(START, periods=(DAYS + 7) * 24, freq="h"))
+    weather, cal = weather_for(ts), calendar_features(ts)
+    week = START + pd.Timedelta(days=49)
+
+    def model():
+        return ProphetModel(cal, weather, workers=1, uncertainty_samples=50, yearly=False)
+
+    clean = run_backtest(data, [model()], weeks=[week])
+    # Corrupt from the second test day on: the week's single fit uses only data before the week.
+    dirty = run_backtest(corrupt_demand_from(data, week + pd.Timedelta(days=1)), [model()], [week])
+    pd.testing.assert_series_equal(clean["yhat"], dirty["yhat"])
+    assert not clean["y"].equals(dirty["y"])

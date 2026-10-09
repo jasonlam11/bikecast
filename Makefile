@@ -26,7 +26,7 @@ features:
 	uv run python -m bikecast.features.build
 
 backtest:
-	uv run python -m bikecast.evaluation.backtest
+	uv run python -m bikecast.evaluation.backtest $(if $(MODELS),--models $(MODELS))
 	uv run python -m bikecast.evaluation.report
 
 eda:
