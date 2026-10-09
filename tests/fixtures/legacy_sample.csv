@@ -1,0 +1,6 @@
+tripduration,starttime,stoptime,"start station id","start station name","start station latitude","start station longitude","end station id","end station name","end station latitude","end station longitude",bikeid,usertype,"postal code"
+1105,"2023-03-01 00:00:44.1520","2023-03-01 00:19:09.9080",386,"Sennott Park Broadway at Norfolk Street",42.3686,-71.0993,403,"Marion St at Harvard St",42.3401,-71.1207,6680,Subscriber,02139
+600,"2023-03-01 08:00:00.0000","2023-03-01 08:10:00.0000",403,"Marion St at Harvard St",42.3401,-71.1207,386,"Sennott Park Broadway at Norfolk Street",42.3686,-71.0993,6681,Customer,
+1105,"2023-03-01 00:00:44.1520","2023-03-01 00:19:09.9080",386,"Sennott Park Broadway at Norfolk Street",42.3686,-71.0993,403,"Marion St at Harvard St",42.3401,-71.1207,6680,Subscriber,02139
+30,"2023-03-01 09:00:00.0000","2023-03-01 09:00:30.0000",386,"Sennott Park Broadway at Norfolk Street",42.3686,-71.0993,386,"Sennott Park Broadway at Norfolk Street",42.3686,-71.0993,6682,Subscriber,02139
+900,"2023-03-01 10:00:00.0000","2023-03-01 10:15:00.0000",999,"BCU Maintenance",42.36,-71.06,403,"Marion St at Harvard St",42.3401,-71.1207,6683,Subscriber,02139
