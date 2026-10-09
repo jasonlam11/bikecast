@@ -258,8 +258,9 @@ could be a little larger.
 The takeaway uses the MLP's forecasts on the 48 non-holiday weekdays in the backtest. Morning net flow is
 forecast arrivals minus departures over 7, 8, and 9am, skipping station-mornings with a closed hour. A
 station "drains" if that flow is below -5 bikes on at least 80% of mornings and "fills" if above +5 on at
-least 80%. These thresholds were set before looking at any output: 5 bikes is roughly what one rebalancing
-stop moves, and 80% means "almost every weekday". Bikes to move is the sum of the flagged stations' median
+least 80%. These thresholds were set before looking at any output: 5 bikes over three hours is a clear
+imbalance rather than noise for a station with a few trips per hour, and 80% means "almost every
+weekday". Both are judgment calls, not operator figures. Bikes to move is the sum of the flagged stations' median
 morning flow, reported next to the actual median for the same stations and days. The historical average
 flags almost the same stations, and the report says so: the list of stations is a property of the city,
 not of the model; the model's value is the day-specific amount. Rejected: estimating truck trips, which
