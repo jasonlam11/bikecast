@@ -1,4 +1,4 @@
-.PHONY: setup data stations aggregate weather calendar features backtest eda error-analysis rebalancing app test lint format
+.PHONY: setup data stations aggregate weather calendar features backtest eda error-analysis rebalancing snapshot app test lint format
 
 setup:
 	uv sync
@@ -31,6 +31,9 @@ backtest:
 
 eda:
 	uv run jupyter nbconvert --to notebook --execute --inplace notebooks/01_eda.ipynb
+
+snapshot:
+	uv run python -m bikecast.evaluation.snapshot
 
 rebalancing:
 	uv run python -m bikecast.evaluation.rebalancing

@@ -1,0 +1,3 @@
+# The chart palette (src/bikecast/viz.py) is designed for a light surface.
+[theme]
+base = "light"

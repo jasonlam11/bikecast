@@ -265,3 +265,18 @@ morning flow, reported next to the actual median for the same stations and days.
 flags almost the same stations, and the report says so: the list of stations is a property of the city,
 not of the model; the model's value is the day-specific amount. Rejected: estimating truck trips, which
 would need dock capacity and starting inventory that trip data does not have.
+
+## Committed results snapshot for the dashboard
+The rule is that raw and processed data are never committed. The one exception is `reports/app_data/`
+(about 4 MB): backtest predictions for all four models plus station names and coordinates, written by
+`make snapshot`. It holds model outputs only, no trips and no hourly demand tables beyond the scored
+backtest rows, and it lets anyone run the dashboard right after cloning, or host it, without a 40-minute
+rebuild. Rejected: requiring the full pipeline before the app can open, which would mean almost nobody
+reviewing the repo sees it.
+
+## Dashboard framing: backtest days, not live forecasts
+The app shows past days from the backtest, labeled "backtest day", with forecast and actual side by side.
+We have no live data feed, and presenting backtest output as "tomorrow" would be misleading. The map colors
+stations by forecast net flow over a time window (7 to 10am or 4 to 7pm), using the same red-drains,
+blue-fills colors as the EDA. The app pins Streamlit's light theme, because the chart palette is designed
+for a light background.
