@@ -38,6 +38,7 @@ features:
 
 backtest:
 	uv run python -m bikecast.evaluation.backtest $(if $(MODELS),--models $(MODELS))
+	$(if $(MODELS),,uv run python -m bikecast.evaluation.backtest --models torch_mlp --weather actual --levels stations)
 	uv run python -m bikecast.evaluation.report
 
 eda:
