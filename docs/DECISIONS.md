@@ -72,3 +72,13 @@ Two top stations got a new dock next door during the data range. These are flagg
 are expected to show up in error analysis. Nashua Street at Red Auerbach Way (A32025) gained an
 "[Extension]" station on 2025-04-28, which replaced West End Park the same day. Copley Square (D32005)
 gained Boylston St at Dartmouth St (D32055) on 2024-05-01.
+
+## Hourly grid in naive Boston local time, with explicit zeros
+Counts are hourly per canonical station on a complete grid (every station, every hour), so empty hours are
+stored as 0 instead of going missing. A departure counts in the hour the trip started, an arrival in the
+hour it ended. We use naive local wall-clock time because that is how Bluebikes publishes timestamps, and
+every day then has exactly 24 hours, which suits a 24-hour day-ahead forecast. The cost is at daylight
+saving changes, as checked in the data: the spring-forward 2am hour is always 0 (it does not exist), and
+the fall-back 1am hour holds two real hours (378 system departures vs 293 the hour before on 2024-11-03).
+That is 2 hours a year, small and documented. Rejected: UTC, which gives 23 and 25 hour local days and
+complicates the daily forecast for no real gain. System-wide totals use every station, not only the top 50.
