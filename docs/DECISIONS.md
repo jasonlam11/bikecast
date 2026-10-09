@@ -170,3 +170,12 @@ previous day's mean, calendar features, and forecast weather (precipitation clip
 log-transformed). Every demand feature for day D uses only data from before D. Row shifts are only valid on
 a complete hourly grid, so the builder checks the grid first and fails if it is incomplete. Phase 2 models
 will use this table.
+
+## How we test for leakage
+`tests/test_leakage.py` builds features and baseline forecasts for a day D, then sets every demand value
+at or after D to 1,000,000 and builds them again. Nothing for D may change. It checks five cutoffs,
+including two in the middle of a station closure, and runs the full backtest with the last test day
+corrupted. Weather for D itself is not corrupted, because the archived forecast for D is a legitimate
+input; weather after D is. A control test adds a deliberately leaky feature (one hour back) and confirms
+the same check catches it, so the test is not passing trivially. Phase 2 models will be added to the same
+test.

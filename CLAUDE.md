@@ -59,8 +59,10 @@ docs/           PLAN.md, DECISIONS.md
 
 ```
 uv sync
-make data        # download + clean + aggregate + weather
+make data        # download + clean (month at a time) + stations + aggregate + weather + calendar
+make data MONTHS=202401   # process only the listed months
 make features
+make eda         # execute notebooks/01_eda.ipynb headless
 make backtest    # runs all models on all backtest windows, writes reports/results.md
 make app         # streamlit run app/streamlit_app.py
 make test        # pytest
