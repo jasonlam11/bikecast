@@ -1,4 +1,15 @@
-.PHONY: setup data stations aggregate weather calendar features backtest eda error-analysis rebalancing snapshot app test lint format
+.PHONY: all readme setup data stations aggregate weather calendar features backtest eda error-analysis rebalancing snapshot app test lint format
+
+all:
+	$(MAKE) data
+	$(MAKE) features
+	$(MAKE) backtest
+	$(MAKE) rebalancing
+	$(MAKE) snapshot
+	$(MAKE) readme
+
+readme:
+	uv run python -m bikecast.evaluation.readme
 
 setup:
 	uv sync

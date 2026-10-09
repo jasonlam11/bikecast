@@ -100,6 +100,32 @@ def sensitivity_section(stations: pd.DataFrame) -> list[str]:
     return [*lines, ""]
 
 
+def per_station_section(preds: pd.DataFrame) -> list[str]:
+    """How many stations each model beats the historical average at, and by how much."""
+    t = (
+        preds.groupby(["station_id", "model"])
+        .apply(lambda d: mae(d["y"], d["yhat"]), include_groups=False)
+        .unstack("model")
+    )
+    lines = [
+        "## Per-station skill vs historical average",
+        "",
+        "Skill computed separately at each station, departures and arrivals pooled.",
+        "",
+        "| model | stations better than hist avg | median skill | lowest | highest |",
+        "|---|---|---|---|---|",
+    ]
+    for m in model_order(t.columns):
+        if m == STRONG_BASELINE:
+            continue
+        sk = 1 - t[m] / t[STRONG_BASELINE]
+        lines.append(
+            f"| {m} | {(sk > 0).sum()} of {len(sk)} | {sk.median():+.1%} | {sk.min():+.1%} | "
+            f"{sk.max():+.1%} |"
+        )
+    return [*lines, ""]
+
+
 def add_groups(preds: pd.DataFrame, weather_actual: pd.DataFrame) -> pd.DataFrame:
     p = preds
     p["day_type"] = p["ts"].dt.dayofweek.map(lambda d: "weekend" if d >= 5 else "weekday")
@@ -307,6 +333,7 @@ def build_report() -> str:
             t = t.reindex([b[2] for b in HOUR_BANDS])
         parts += [f"### {title}", "", fmt_wide(t, by), ""]
     parts += ["![MAE by hour](figures/results_mae_by_hour.png)", ""]
+    parts += per_station_section(stations)
     parts += coverage_section(stations)
     parts += sensitivity_section(stations)
 

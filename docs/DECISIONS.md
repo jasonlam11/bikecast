@@ -280,3 +280,10 @@ We have no live data feed, and presenting backtest output as "tomorrow" would be
 stations by forecast net flow over a time window (7 to 10am or 4 to 7pm), using the same red-drains,
 blue-fills colors as the EDA. The app pins Streamlit's light theme, because the chart palette is designed
 for a light background.
+
+## README numbers are copied by code
+The README's results tables, per-station skill, weather sensitivity, and rebalancing summary sit between
+marker comments and are filled by `make readme` from reports/results.md and reports/rebalancing.md. A test
+re-renders the README and fails if anything differs, so a stale or hand-edited number cannot reach the main
+page. The planned `02_baselines.ipynb` was dropped: results.md already reports both baselines with every
+breakdown, so a notebook would only duplicate it.

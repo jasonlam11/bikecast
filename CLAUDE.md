@@ -48,10 +48,11 @@ src/bikecast/
   data/         download.py, clean.py, stations.py, aggregate.py, weather.py, calendar.py
   features/     build.py
   models/       baseline.py, prophet_model.py, torch_model.py
-  evaluation/   backtest.py, metrics.py, report.py
-notebooks/      01_eda.ipynb, 02_baselines.ipynb, 03_error_analysis.ipynb
+  evaluation/   backtest.py, metrics.py, report.py, analysis.py, rebalancing.py, snapshot.py, readme.py
+  dashboard.py  data functions for the app
+notebooks/      01_eda.ipynb, 03_error_analysis.ipynb
 app/            streamlit_app.py
-reports/        figures/, results.md (generated)
+reports/        figures/, results.md, rebalancing.md, app_data/ (all generated)
 tests/
 docs/           PLAN.md, DECISIONS.md
 ```
@@ -69,6 +70,8 @@ make error-analysis   # execute notebooks/03_error_analysis.ipynb headless
 make rebalancing # writes reports/rebalancing.md
 make snapshot    # writes reports/app_data/ for the dashboard
 make app         # streamlit run app/streamlit_app.py
+make readme      # copy generated results into README.md
+make all         # data, features, backtest, rebalancing, snapshot, readme
 make test        # pytest
 make lint        # ruff check + format --check
 ```
