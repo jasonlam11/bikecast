@@ -4,7 +4,7 @@ import duckdb
 import pandas as pd
 import pytest
 
-from bikecast.data.aggregate import aggregate_hourly, aggregate_system, data_range
+from bikecast.data.aggregate import aggregate_hourly, aggregate_system, data_range, flag_in_service
 from bikecast.data.trips import register_trips
 
 START = datetime(2024, 1, 1)
@@ -101,3 +101,32 @@ def test_data_range_covers_whole_months(tmp_path):
     for m in ["202401", "202402", "202609"]:
         (tmp_path / f"trips_{m}.parquet").touch()
     assert data_range(tmp_path) == (datetime(2024, 1, 1), datetime(2026, 10, 1))
+
+
+def test_flag_in_service_masks_long_closures_only():
+    ts = pd.date_range("2024-01-01", periods=100, freq="h")
+    busy = [1] * 100
+    # Station X: quiet for 10 hours (overnight), then closed for 50 hours.
+    x = [1] * 20 + [0] * 10 + [1] * 10 + [0] * 50 + [1] * 10
+    df = pd.DataFrame(
+        {
+            "station_id": ["X"] * 100 + ["Y"] * 100,
+            "ts": list(ts) * 2,
+            "departures": x + busy,
+            "arrivals": x + busy,
+        }
+    ).sample(frac=1, random_state=0)  # order should not matter
+    flag = flag_in_service(df, min_hours=48)
+    x_flag = flag[df["station_id"] == "X"].loc[sorted(df.index[df["station_id"] == "X"])]
+    assert x_flag.iloc[20:30].all()  # 10 quiet hours stay in service
+    assert not x_flag.iloc[40:90].any()  # the 50-hour closure is masked
+    assert flag[df["station_id"] == "Y"].all()
+
+
+def test_flag_in_service_does_not_join_runs_across_stations():
+    ts = pd.date_range("2024-01-01", periods=30, freq="h")
+    # Each station is idle for 30 hours: below the threshold alone, above it if joined.
+    df = pd.DataFrame(
+        {"station_id": ["A"] * 30 + ["B"] * 30, "ts": list(ts) * 2, "departures": 0, "arrivals": 0}
+    )
+    assert flag_in_service(df, min_hours=48).all()

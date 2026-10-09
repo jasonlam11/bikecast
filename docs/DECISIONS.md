@@ -82,3 +82,16 @@ saving changes, as checked in the data: the spring-forward 2am hour is always 0 
 the fall-back 1am hour holds two real hours (378 system departures vs 293 the hour before on 2024-11-03).
 That is 2 hours a year, small and documented. Rejected: UTC, which gives 23 and 25 hour local days and
 complicates the daily forecast for no real gain. System-wide totals use every station, not only the top 50.
+
+## Mask closed stations instead of scoring them as zero demand
+Some top stations go dark for days or months: Newbury St at Hereford St (B32000) and Beacon St at
+Massachusetts Ave (B32016) are removed in winter, and the Copley Square and Boylston St stations close for
+the Boston Marathon each April. A run of 48 or more hours with no departures and no arrivals is flagged
+`in_service = False`. That is 17,508 station-hours (1.5%) across 11 stations. Overnight lulls at busy
+stations are much shorter than 48 hours. Closed hours stay in the table but are excluded from training
+targets and from scoring, because predicting 0 for a closed station is trivial and would make winter and
+April results look better than they are. This assumes operators know their own planned closures, which is
+realistic. The flag is never a model input: a run's length is only known after it ends, so using it as a
+feature would leak the future. In the backtest it is recomputed on each training slice so that slice uses
+no later data. Rejected: swapping the winter-only stations for year-round ones (it does not handle the
+Marathon closures) and scoring closed hours as zeros.

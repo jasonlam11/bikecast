@@ -21,6 +21,9 @@ from bikecast.data.trips import register_trips
 log = logging.getLogger(__name__)
 
 SYSTEM_ID = "SYSTEM"
+# A station with no departures and no arrivals for this many hours in a row is treated as closed
+# (winter removal, Marathon street closures), not as having zero demand.
+CLOSED_MIN_HOURS = 48
 
 
 def data_range(interim_dir=config.INTERIM) -> tuple[datetime, datetime]:
@@ -115,6 +118,21 @@ def aggregate_system(
     ).df()
 
 
+def flag_in_service(hourly: pd.DataFrame, min_hours: int = CLOSED_MIN_HOURS) -> pd.Series:
+    """False for station-hours inside an all-zero run of at least `min_hours`.
+
+    This is an evaluation and training mask, never a model input: a run's length is only known
+    after it ends. Callers working on a time slice should compute it on that slice only.
+    """
+    df = hourly.sort_values(["station_id", "ts"])
+    idle = (df["departures"] == 0) & (df["arrivals"] == 0)
+    # A new run starts whenever station or idle state changes.
+    run_id = ((idle != idle.shift()) | (df["station_id"] != df["station_id"].shift())).cumsum()
+    run_len = idle.groupby(run_id).transform("size")
+    closed = idle & (run_len >= min_hours)
+    return (~closed).reindex(hourly.index)
+
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     con = duckdb.connect()
@@ -125,6 +143,7 @@ def main() -> None:
     start, end = data_range()
 
     hourly = aggregate_hourly(con, top_ids, start, end)
+    hourly["in_service"] = flag_in_service(hourly)
     system = aggregate_system(con, start, end)
     hourly.to_parquet(config.PROCESSED / "hourly.parquet", index=False)
     system.to_parquet(config.PROCESSED / "hourly_system.parquet", index=False)
@@ -139,6 +158,13 @@ def main() -> None:
         len(hourly),
         len(top_ids) * n_hours,
         100 * (hourly["departures"] == 0).mean(),
+    )
+    closed = hourly[~hourly["in_service"]]
+    log.info(
+        "Out of service: %d station-hours (%.1f%%) across %d stations",
+        len(closed),
+        100 * len(closed) / len(hourly),
+        closed["station_id"].nunique(),
     )
     log.info(
         "System: %d rows, %d departures, %d arrivals",
