@@ -47,10 +47,12 @@ LEGACY_MEMBER_MAP = {"Subscriber": "member", "Customer": "casual"}
 
 MIN_DURATION_S = 60
 MAX_DURATION_S = 24 * 3600
-# Test, depot, and staff stations. Matched case-insensitively against start and end names.
+# Test, depot, and staff stations, matched on start and end. IDs catch renames the names miss:
+# X32999 was "18 Dorrance Warehouse", later renamed "440 Rutherford Ave Depot".
 TEST_STATION_PATTERN = re.compile(
-    r"\btest\b|warehouse|maintenance|\bbcu\b|mobile temporary", re.IGNORECASE
+    r"\btest\b|warehouse|maintenance|\bbcu\b|mobile temporary|\bdepot\b", re.IGNORECASE
 )
+TEST_STATION_IDS = {"X32999"}
 
 
 def detect_schema(columns: list[str]) -> str:
@@ -89,8 +91,8 @@ def normalize(raw: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def _is_test_station(names: pd.Series) -> pd.Series:
-    return names.fillna("").str.contains(TEST_STATION_PATTERN)
+def _is_test_station(ids: pd.Series, names: pd.Series) -> pd.Series:
+    return ids.isin(TEST_STATION_IDS) | names.fillna("").str.contains(TEST_STATION_PATTERN)
 
 
 def apply_rules(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, int]]:
@@ -104,7 +106,8 @@ def apply_rules(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, int]]:
         "duration_under_60s": lambda d: duration[d.index] < MIN_DURATION_S,
         "duration_over_24h": lambda d: duration[d.index] > MAX_DURATION_S,
         "test_station": lambda d: (
-            _is_test_station(d["start_station_name"]) | _is_test_station(d["end_station_name"])
+            _is_test_station(d["start_station_id"], d["start_station_name"])
+            | _is_test_station(d["end_station_id"], d["end_station_name"])
         ),
         "no_station": lambda d: d["start_station_id"].isna() & d["end_station_id"].isna(),
     }

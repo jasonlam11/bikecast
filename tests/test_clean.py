@@ -80,6 +80,14 @@ def test_test_station_pattern_does_not_hit_real_names():
     assert removed["test_station"] == 0
 
 
+def test_test_station_matches_renamed_depot_by_id():
+    df = normalize(load("new_sample.csv")).head(1).copy()
+    df.loc[:, "end_station_id"] = "X32999"
+    df.loc[:, "end_station_name"] = "Some Future Name"
+    _, removed = apply_rules(df)
+    assert removed["test_station"] == 1
+
+
 def test_clean_csv_writes_parquet_and_counts_add_up(tmp_path):
     out = tmp_path / "trips.parquet"
     counts = clean_csv(FIXTURES / "new_sample.csv", out)
