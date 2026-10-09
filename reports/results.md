@@ -106,16 +106,16 @@ Share of actuals inside the model's 80% interval. Well calibrated is about 80%.
 |---|---|---|---|---|
 | prophet | all | 84.9% | 5.75 | 165,614 |
 | prophet | target: arrivals | 84.8% | 5.72 | 82,807 |
-| prophet | target: departures | 85.0% | 5.79 | 82,807 |
+| prophet | target: departures | 85.0% | 5.78 | 82,807 |
 | prophet | season: fall | 80.3% | 6.31 | 33,600 |
-| prophet | season: spring | 86.9% | 5.67 | 49,142 |
+| prophet | season: spring | 87.0% | 5.67 | 49,142 |
 | prophet | season: summer | 82.1% | 6.19 | 50,280 |
 | prophet | season: winter | 90.8% | 4.63 | 32,592 |
-| prophet | hours: night 0-5 | 98.0% | 3.98 | 41,424 |
-| prophet | hours: am peak 6-9 | 86.5% | 5.73 | 27,616 |
-| prophet | hours: midday 10-15 | 80.5% | 6.70 | 41,390 |
-| prophet | hours: pm peak 16-19 | 66.8% | 6.99 | 27,592 |
-| prophet | hours: evening 20-23 | 88.3% | 5.78 | 27,592 |
+| prophet | hours: night 0-5 | 97.9% | 3.98 | 41,424 |
+| prophet | hours: am peak 6-9 | 86.6% | 5.74 | 27,616 |
+| prophet | hours: midday 10-15 | 80.6% | 6.70 | 41,390 |
+| prophet | hours: pm peak 16-19 | 66.7% | 6.98 | 27,592 |
+| prophet | hours: evening 20-23 | 88.2% | 5.78 | 27,592 |
 
 ## Sensitivity: forecast weather vs actual weather
 

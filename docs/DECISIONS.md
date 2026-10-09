@@ -241,7 +241,7 @@ predictions.
 Prophet's components add together, so the summer level shift and the weekday peak shape are added at
 3am too. Night MAE is 0.81 for Prophet vs 0.49 for the historical average. Its noise model assumes the
 same spread at every hour, while count data spreads more when demand is higher. Coverage of the 80%
-interval is 84.9% overall, but 98.0% at night (too wide) and 66.8% in the 4 to 7pm peak (too narrow).
+interval is 84.9% overall, but 97.9% at night (too wide) and 66.7% in the 4 to 7pm peak (too narrow).
 Multiplicative seasonality or a variance-stabilizing target transform would likely help. These were not
 tried, because choosing them after seeing test results would be tuning on the test set; they are noted
 as future work. At system level, counts are large and closer to normally distributed, which suits
@@ -301,3 +301,9 @@ differed slightly, moving a few coverage figures by 0.1 point. Prophet simulates
 global random state, which we had not seeded. Each station and target now seeds it from a hash of its
 names right before forecasting, so intervals are identical across runs and independent of which worker
 process handles which model.
+
+## Reproducibility check result
+A fresh clone of the repo, run with `uv sync` and `make all` on 2026-10-09, reproduced reports/results.md,
+reports/rebalancing.md, README.md, the station merges, the MLP training log, and the dashboard snapshot
+exactly (after the seeded-interval fix above). The Phase 3 done criterion, that a stranger can clone, run
+the make targets, and get the same results table, is met.
