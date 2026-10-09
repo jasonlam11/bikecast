@@ -212,6 +212,40 @@ def plot_mae_by_week(preds: pd.DataFrame) -> None:
     plt.close(fig)
 
 
+# A week chosen to show the holiday effect: Columbus Day 2025 at a Kendall employment station.
+SPOT_CHECK = {"station_id": "M32037", "week": "2025-10-13", "target": "arrivals"}
+
+
+def plot_spot_check(preds: pd.DataFrame, station_id: str, week: str, target: str) -> None:
+    def sel(m):
+        keep = (preds["model"] == m) & (preds["station_id"] == station_id)
+        keep &= (preds["test_week"] == pd.Timestamp(week)) & (preds["target"] == target)
+        d = preds[keep]
+        return d.set_index("ts").sort_index()
+
+    models = [m for m in model_order(preds["model"].unique()) if m != BASELINE]
+    fig, ax = plt.subplots(figsize=(11, 4))
+    if "prophet" in models:
+        p = sel("prophet")
+        ax.fill_between(p.index, p["yhat_lower"], p["yhat_upper"], color=viz.SERIES[1],
+                        alpha=0.15, linewidth=0, label="prophet 80% interval")  # fmt: skip
+    actual = sel(models[0])
+    ax.plot(actual.index, actual["y"], color=viz.INK, linewidth=1.5, label="actual")
+    colors = {
+        "historical_average": viz.SERIES[3],
+        "prophet": viz.SERIES[1],
+        "torch_mlp": viz.SERIES[0],
+    }
+    for m in models:
+        d = sel(m)
+        ax.plot(d.index, d["yhat"], color=colors.get(m, viz.MUTED), linewidth=1.5, label=m)
+    ax.set_title(f"Station {station_id}, hourly {target}, test week of {week}")
+    ax.set_ylabel(f"{target} per hour")
+    ax.legend(loc="upper right", ncol=5, fontsize=8)
+    viz.save(fig, "results_spot_check")
+    plt.close(fig)
+
+
 def build_report() -> str:
     weather_actual = pd.read_parquet(config.PROCESSED / "weather_actual.parquet")
     stations = add_groups(load_predictions("stations"), weather_actual)
@@ -278,6 +312,7 @@ def build_report() -> str:
 
     plot_mae_by_hour(stations)
     plot_mae_by_week(stations)
+    plot_spot_check(stations, **SPOT_CHECK)
     return "\n".join(parts)
 
 

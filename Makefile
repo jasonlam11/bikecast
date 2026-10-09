@@ -1,4 +1,4 @@
-.PHONY: setup data stations aggregate weather calendar features backtest eda app test lint format
+.PHONY: setup data stations aggregate weather calendar features backtest eda error-analysis app test lint format
 
 setup:
 	uv sync
@@ -31,6 +31,9 @@ backtest:
 
 eda:
 	uv run jupyter nbconvert --to notebook --execute --inplace notebooks/01_eda.ipynb
+
+error-analysis:
+	uv run jupyter nbconvert --to notebook --execute --inplace notebooks/03_error_analysis.ipynb
 
 app:
 	uv run streamlit run app/streamlit_app.py
